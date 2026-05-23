@@ -53,7 +53,11 @@ def _ensure_model() -> Path:
     tmp_path = _MODEL_PATH.with_suffix(_MODEL_PATH.suffix + ".tmp")
     try:
         with urllib.request.urlopen(_MODEL_URL, timeout=30) as resp, open(tmp_path, "wb") as f:
-            f.write(resp.read())
+            while True:
+                chunk = resp.read(1024 * 1024)
+                if not chunk:
+                    break
+                f.write(chunk)
         tmp_path.replace(_MODEL_PATH)
     except Exception as e:
         tmp_path.unlink(missing_ok=True)
@@ -198,15 +202,30 @@ class FaceAnalyzer:
         self._landmarker.close()
 
 
+_QUIT_KEYS = (27, ord("q"), ord("Q"))  # Esc, q, Q
+
+
+def _poll_quit_key() -> bool:
+    """OpenCV ウィンドウがフォーカスされているときのキー入力を確認する。"""
+    return (cv2.waitKey(1) & 0xFF) in _QUIT_KEYS
+
+
 if __name__ == "__main__":
     import sys
 
     analyzer = FaceAnalyzer()
-    print("Face analyzer started. Press 'q' to quit.")
+    print(
+        "Face analyzer started.\n"
+        "  停止: 映像ウィンドウを選択して Esc または q を押す\n"
+        "        （Ctrl+C でも終了できます）",
+        file=sys.stderr,
+    )
     try:
         while True:
             frame, result = analyzer.get_frame()
             if frame is None:
+                if _poll_quit_key():
+                    break
                 continue
             if result is not None:
                 print(
@@ -219,7 +238,7 @@ if __name__ == "__main__":
             else:
                 print("No face detected.                    ", end="\r")
             cv2.imshow("AI Focus Tracker - Phase 1", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+            if _poll_quit_key():
                 break
     except KeyboardInterrupt:
         pass
