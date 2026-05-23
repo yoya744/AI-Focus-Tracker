@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import time
 import urllib.request
+import hashlib
 from pathlib import Path
 
 import cv2
@@ -42,18 +43,29 @@ _MODEL_URL = (
     "https://storage.googleapis.com/mediapipe-models/"
     "face_landmarker/face_landmarker/float16/1/face_landmarker.task"
 )
+_MODEL_SHA256 = "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"
 _CACHE_DIR = Path.home() / ".cache" / "ai_focus_tracker"
 _MODEL_PATH = _CACHE_DIR / "face_landmarker.task"
 
 
+def _has_expected_model_hash(path: Path) -> bool:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        while chunk := f.read(8192):
+            h.update(chunk)
+    return h.hexdigest() == _MODEL_SHA256
+
+
 def _ensure_model() -> Path:
-    if _MODEL_PATH.exists():
+    if _MODEL_PATH.exists() and _has_expected_model_hash(_MODEL_PATH):
         return _MODEL_PATH
     _MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = _MODEL_PATH.with_suffix(_MODEL_PATH.suffix + ".tmp")
     try:
         with urllib.request.urlopen(_MODEL_URL, timeout=30) as resp, open(tmp_path, "wb") as f:
             f.write(resp.read())
+        if not _has_expected_model_hash(tmp_path):
+            raise RuntimeError("Downloaded face landmarker model failed SHA-256 verification")
         tmp_path.replace(_MODEL_PATH)
     except Exception as e:
         tmp_path.unlink(missing_ok=True)
