@@ -42,14 +42,22 @@ _MODEL_URL = (
     "https://storage.googleapis.com/mediapipe-models/"
     "face_landmarker/face_landmarker/float16/1/face_landmarker.task"
 )
-_MODEL_PATH = Path(__file__).resolve().parent.parent / "data" / "face_landmarker.task"
+_CACHE_DIR = Path.home() / ".cache" / "ai_focus_tracker"
+_MODEL_PATH = _CACHE_DIR / "face_landmarker.task"
 
 
 def _ensure_model() -> Path:
     if _MODEL_PATH.exists():
         return _MODEL_PATH
     _MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    urllib.request.urlretrieve(_MODEL_URL, _MODEL_PATH)
+    tmp_path = _MODEL_PATH.with_suffix(_MODEL_PATH.suffix + ".tmp")
+    try:
+        with urllib.request.urlopen(_MODEL_URL, timeout=30) as resp, open(tmp_path, "wb") as f:
+            f.write(resp.read())
+        tmp_path.replace(_MODEL_PATH)
+    except Exception as e:
+        tmp_path.unlink(missing_ok=True)
+        raise RuntimeError(f"Failed to download face landmarker model: {e}") from e
     return _MODEL_PATH
 
 
@@ -73,6 +81,7 @@ class FaceAnalyzer:
 
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
+            self._landmarker.close()
             raise RuntimeError("Camera not available")
 
         self._start_time = time.monotonic()
