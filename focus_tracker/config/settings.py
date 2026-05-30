@@ -14,8 +14,8 @@ from dotenv import load_dotenv
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _APP_ROOT = Path(__file__).resolve().parents[1]
 
+load_dotenv(_APP_ROOT / ".env", override=False)
 load_dotenv(_REPO_ROOT / ".env", override=False)
-load_dotenv(_APP_ROOT / ".env", override=True)
 
 
 def _env(key: str, default: str | None = None) -> str | None:
