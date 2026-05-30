@@ -1,3 +1,11 @@
 focus_tracker/config/user_profile.json
 focus_tracker/data/sessions.db
 focus_tracker/data/face_landmarker.task
+
+# 環境変数（秘密情報を含む可能性があるためコミットしない）
+.env
+.env.local
+.env.*.local
+!.env.example
+
+/Docs/

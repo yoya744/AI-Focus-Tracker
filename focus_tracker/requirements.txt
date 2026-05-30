@@ -3,3 +3,4 @@ opencv-python>=4.9
 mediapipe>=0.10
 numpy>=1.26
 requests>=2.31
+python-dotenv>=1.0

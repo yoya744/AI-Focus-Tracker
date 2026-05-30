@@ -1,0 +1,23 @@
+"""アプリケーション設定（環境変数 / .env）。"""
+
+from focus_tracker.config.settings import (
+    FACE_LANDMARKER_MODEL_CACHE_DIR,
+    FACE_LANDMARKER_MODEL_SHA256,
+    FACE_LANDMARKER_MODEL_URL,
+    FLASK_DEBUG,
+    FLASK_HOST,
+    FLASK_PORT,
+    OLLAMA_BASE_URL,
+    OLLAMA_MODEL,
+)
+
+__all__ = [
+    "FACE_LANDMARKER_MODEL_CACHE_DIR",
+    "FACE_LANDMARKER_MODEL_SHA256",
+    "FACE_LANDMARKER_MODEL_URL",
+    "FLASK_DEBUG",
+    "FLASK_HOST",
+    "FLASK_PORT",
+    "OLLAMA_BASE_URL",
+    "OLLAMA_MODEL",
+]
