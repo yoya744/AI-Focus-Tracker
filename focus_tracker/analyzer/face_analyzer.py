@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import sys
 import time
 import urllib.request
 import hashlib
@@ -20,6 +21,22 @@ from mediapipe.tasks.python.vision import (
 from mediapipe.tasks.python.vision.core import vision_task_running_mode as running_mode
 from mediapipe.tasks.python.vision import drawing_utils as mp_drawing_utils
 from mediapipe.tasks.python.vision import drawing_styles as mp_drawing_styles
+
+try:
+    from focus_tracker.config.settings import (
+        FACE_LANDMARKER_MODEL_CACHE_DIR,
+        FACE_LANDMARKER_MODEL_SHA256,
+        FACE_LANDMARKER_MODEL_URL,
+    )
+except ImportError:
+    _repo_root = Path(__file__).resolve().parents[2]
+    if str(_repo_root) not in sys.path:
+        sys.path.insert(0, str(_repo_root))
+    from focus_tracker.config.settings import (
+        FACE_LANDMARKER_MODEL_CACHE_DIR,
+        FACE_LANDMARKER_MODEL_SHA256,
+        FACE_LANDMARKER_MODEL_URL,
+    )
 
 LEFT_EYE_IDX = [33, 160, 158, 133, 153, 144]
 RIGHT_EYE_IDX = [362, 385, 387, 263, 373, 380]
@@ -39,13 +56,7 @@ FACE_3D_MODEL = np.array(
 FACE_LANDMARK_IDX = [1, 152, 263, 33, 287, 57]
 
 _NUM_LANDMARKS = 468
-_MODEL_URL = (
-    "https://storage.googleapis.com/mediapipe-models/"
-    "face_landmarker/face_landmarker/float16/1/face_landmarker.task"
-)
-_MODEL_SHA256 = "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff"
-_CACHE_DIR = Path.home() / ".cache" / "ai_focus_tracker"
-_MODEL_PATH = _CACHE_DIR / "face_landmarker.task"
+_MODEL_PATH = FACE_LANDMARKER_MODEL_CACHE_DIR / "face_landmarker.task"
 
 
 def _has_expected_model_hash(path: Path) -> bool:
@@ -53,16 +64,18 @@ def _has_expected_model_hash(path: Path) -> bool:
     with path.open("rb") as f:
         while chunk := f.read(8192):
             h.update(chunk)
-    return h.hexdigest() == _MODEL_SHA256
+    return h.hexdigest() == FACE_LANDMARKER_MODEL_SHA256
 
 
 def _ensure_model() -> Path:
     if _MODEL_PATH.exists() and _has_expected_model_hash(_MODEL_PATH):
         return _MODEL_PATH
     _MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = _MODEL_PATH.with_suffix(_MODEL_PATH.suffix + ".tmp")
+    tmp_path = _MODEL_PATH.with_suffix(_MODEL_PATH.suffix + f".{time.monotonic_ns()}.tmp")
     try:
-        with urllib.request.urlopen(_MODEL_URL, timeout=30) as resp, open(tmp_path, "wb") as f:
+        with urllib.request.urlopen(FACE_LANDMARKER_MODEL_URL, timeout=30) as resp, open(
+            tmp_path, "wb"
+        ) as f:
             while True:
                 chunk = resp.read(1024 * 1024)
                 if not chunk:
